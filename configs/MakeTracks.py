@@ -138,24 +138,18 @@ p.sequence   = [digiRecoil,
 # The input file to be added.
 # for now, we just take the first argument on the command line
 import sys
-p.inputFiles = ["/Users/sophie/LDMX/software/WAB-analysis/Hits/WASB_FF3_8GEV_Hits.root"]
+p.inputFiles = ["8GeV_WABFF2_all.root"]
 
 # Example about how to drop some of the collections in the output file.
 p.keep = [
-    #    "drop .*SimHits.*", #drop all sim hits
-    "drop .*Ecal.*", #drop all ecal (Digis are not removed)
-    #    "drop .*Magnet*",
-    "drop .*Hcal.*",
-    "drop .*Scoring.*",
-    "drop .*SimParticles.*",
     "drop .*TriggerPad.*"
 ]
 
 # Output name
 #   just append '_withTracking' to the name of the input file
 from pathlib import Path
-p.inputFiles = ["/Users/sophie/LDMX/software/WAB-analysis/Hits/WASB_FF3_8GEV_Hits.root"]
-p.outputFiles = ['WASB_FF3_8GEV_Tracks.root']
+p.inputFiles = ["8GeV_WABFF2_all.root"]
+p.outputFiles = ['8GeV_WABFF2_tracks.root']
 
 # lower log level so 'info' and above messages can be printed
 p.termLogLevel=1

@@ -21,13 +21,11 @@ and
 
 # tracking
 
-To create tracking output you first need to store just the hits:
-
--- ldmx fire WABHits.py
-
 The run the tracking (edit the script to use the right input .root):
 
--- ldmx fire WABTracking.py (MakeTracks.py)
+-- ldmx fire MakeTracks.py
+
+passing the output of WABGun into here
 
 # analysis
 
@@ -35,9 +33,9 @@ For general analysis use ...
 
 For tracking analysis:
 
--- ldmx python3 ExtractTracks.py --ifile1 WAB-tracking/roots/WABTrack/WAB_FF2_8GEV_Track.root
+-- ldmx python3 EventAna.py --ifile1 WAB_FF2_8GEV_Track.root
 
-this produces an ntuple of track parameters
+this produces an ntuple of event parameters
 
 # signals at 8GeV_signal
 
@@ -60,4 +58,4 @@ To fully veto WABs we need to combine information into the Veto, this includes:
 - ECAL Rec hits
 - HCAL Rec hits
 - HCAL clusters (using old algorithm)
-- 
+-

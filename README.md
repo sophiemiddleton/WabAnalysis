@@ -4,7 +4,8 @@
 
 8GeV LHE samples for WAB, WASB and WAS made using the MadGraph generator with a model stored in:  /nfs/slac/g/ldmx/users/smidd/MG5_aMC_v2_7_3
 
-There are some issues with large errors on FF4 of the WAB and WASB, more to follow.
+In 2024, a new set of samples were made with a new model, these are _corr in the LHE files.
+
 
 ### Generator analysis
 
@@ -23,27 +24,19 @@ The output will be in the format of a .root file containing LDMX products. Furth
 
 ### Tracking
 
-To create tracking output you first need to store just the hits:
-
--- ldmx fire WABHits.py
-
 The run the tracking (edit the script to use the right input .root):
 
--- ldmx fire WABTracking.py
+-- ldmx fire MakeTracks.py
 
-This produces a .root file with the track products for the Recoil Tracker (Tagger is optional). Further Ntupling is needed for analysis.
+This produces a .root file with the track products for the Recoil Tracker (Tagger is optional).
 
 ### Analysis
 
 For general analysis use the WABAna.py. This produces an NTuple containing useful features for hits, clusters and tracks as input to the veto:
 
--- ldmx python3 WABAna.py --ifile1 WAB-tracking/roots/WABTrack/WAB_FF2_8GEV_all.root (output of WABGun)
+-- ldmx python3 EventAna.py --ifile1 WAB-tracking/roots/WABTrack/WAB_FF2_8GEV_all.root (output of WABGun)
 
-For tracking analysis:
-
--- ldmx python3 ExtractTracks.py --ifile1 WAB-tracking/roots/WABTrack/WAB_FF2_8GEV_Track.root (output of WABTracking)
-
-this produces an ntuple of track parameters
+this produces an ntuple of event level parameters
 
 ### signals at 8GeV_signal
 

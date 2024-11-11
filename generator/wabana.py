@@ -4,8 +4,6 @@ from ROOT import TCanvas, TH1F, TH2F, TLorentzVector, TF1, TFile, TStyle
 import math
 import pandas as pd
 
-path = "/Users/sophie/LDMX/old-ldmx/ldmx-files/8GeV/"
-
 # Read specific columns from CSV file
 df = pd.read_csv('files.csv')
 
