@@ -41,12 +41,15 @@ class GetPart:
         self.recoilTracking = ROOT.std.vector('ldmx::Track')();
         self.hcalHits      = ROOT.std.vector('ldmx::HcalHit')()
         self.ecalHits      = ROOT.std.vector('ldmx::EcalHit')()
-        self.hcalClusters = ROOT.std.vector('ldmx::HcalCluster')();
+        #self.hcalClusters = ROOT.std.vector('ldmx::HcalCluster')();
+        self.pfhcalClusters = ROOT.std.vector('ldmx::CaloCluster')();
+        self.hcalVeto = ROOT.ldmx.HcalVetoResult()
         self.tin1.SetBranchAddress("EventHeader",  ROOT.AddressOf( self.evHeader1 ));
         self.tin1.SetBranchAddress("RecoilTracks_TrackerReco",  ROOT.AddressOf( self.recoilTracking ));
         self.tin1.SetBranchAddress("HcalRecHits_signal", ROOT.AddressOf( self.hcalHits ));
         self.tin1.SetBranchAddress("EcalRecHits_signal", ROOT.AddressOf( self.ecalHits ));
-        self.tin1.SetBranchAddress("HcalClusters_signal",  ROOT.AddressOf( self.hcalClusters ));
+        self.tin1.SetBranchAddress("PFHcalClusters_signal",  ROOT.AddressOf( self.pfhcalClusters ));
+        self.tin1.SetBranchAddress("HcalVeto_signal", ROOT.AddressOf( self.hcalVeto ))
         # loop and save:
         self.loop();
 
@@ -54,6 +57,9 @@ class GetPart:
     def loop(self):
         f = TFile( 'trackana.root', 'RECREATE' )
         Features = TTree( 'Features', 'Information about events' )
+
+        passesVeto = array('i',[0])
+        Features.Branch("passesVeto", passesVeto,  'passesVeto/I')
 
         NHits = array('f',[0])
         Features.Branch("NHits",  NHits,  'NHits/F')
@@ -73,6 +79,9 @@ class GetPart:
         Theta = array('f',[0])
         Features.Branch("Theta", Theta,  'Theta/F')
 
+        QoP = array('f',[0])
+        Features.Branch("QoP", QoP,  'QoP/F')
+
         SumECAL = array('f',[0])
         Features.Branch("SumECAL", SumECAL,  'SumECAL/F')
 
@@ -82,6 +91,9 @@ class GetPart:
         nClusters = array('f',[0])
         Features.Branch("nClusters", nClusters,  'nClusters/F')
 
+        isSignal = array('i',[0])
+        Features.Branch("isSignal", isSignal,  'isSignal/I')
+
         T= array('f',[0])
         Features.Branch("T", T,  'T/F')
 
@@ -89,6 +101,7 @@ class GetPart:
 
         for i in range(nent):
             self.tin1.GetEntry(i);
+            passesVeto[0] = self.hcalVeto.passesVeto()
             NHits[0] = 0
             Mom[0] = 0
             D0[0] = 0
@@ -96,9 +109,11 @@ class GetPart:
             Phi[0] = 0
             Theta[0] = 0
             T[0] = 0
+            QoP[0] = 0
             SumECAL[0] = 0
             SumHCAL[0] =0
             nClusters[0] = 0
+            isSignal[0] = 0
             #avEClu[0] = 0
             #avNHitsClu[0] = 0
             hasTrack = False
@@ -109,8 +124,11 @@ class GetPart:
                 Z0[0] = track.getZ0()
                 Phi[0] = track.getPhi()
                 Theta[0] = track.getTheta()
+                QoP[0] = track.getQoP()
                 T[0] = track.getT()
+                isSignal[0] = 1
                 hasTrack = True
+
 
             for hit in self.hcalHits:
                 sumHcal = 0
@@ -121,7 +139,7 @@ class GetPart:
                     SumECAL[0] +=  hit.getEnergy()
 
             #for cluster in self.hcalClusters:
-            nClusters[0] = len(self.hcalClusters)
+            nClusters[0] = len(self.pfhcalClusters)
 
             if hasTrack == True:
                 Features.Fill()

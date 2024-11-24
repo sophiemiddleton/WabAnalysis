@@ -45,11 +45,11 @@ class GetPart:
         self.pfhcalClusters = ROOT.std.vector('ldmx::CaloCluster')();
         self.hcalVeto = ROOT.ldmx.HcalVetoResult()
         self.tin1.SetBranchAddress("EventHeader",  ROOT.AddressOf( self.evHeader1 ));
-        self.tin1.SetBranchAddress("RecoilTracks_TrackerReco",  ROOT.AddressOf( self.recoilTracking ));
-        self.tin1.SetBranchAddress("HcalRecHits_PF", ROOT.AddressOf( self.hcalHits ));
-        self.tin1.SetBranchAddress("EcalRecHits_PF", ROOT.AddressOf( self.ecalHits ));
-        self.tin1.SetBranchAddress("PFHcalClusters_PF",  ROOT.AddressOf( self.pfhcalClusters ));
-        self.tin1.SetBranchAddress("HcalVeto_PF", ROOT.AddressOf( self.hcalVeto ))
+        #self.tin1.SetBranchAddress("RecoilTracks_TrackerReco",  ROOT.AddressOf( self.recoilTracking ));
+        self.tin1.SetBranchAddress("HcalRecHits_signal", ROOT.AddressOf( self.hcalHits ));
+        self.tin1.SetBranchAddress("EcalRecHits_signal", ROOT.AddressOf( self.ecalHits ));
+        self.tin1.SetBranchAddress("PFHcalClusters_signal",  ROOT.AddressOf( self.pfhcalClusters ));
+        self.tin1.SetBranchAddress("HcalVeto_signal", ROOT.AddressOf( self.hcalVeto ))
         # loop and save:
         self.loop();
 
@@ -60,27 +60,6 @@ class GetPart:
 
         passesVeto = array('i',[0])
         Features.Branch("passesVeto", passesVeto,  'passesVeto/I')
-
-        NHits = array('f',[0])
-        Features.Branch("NHits",  NHits,  'NHits/F')
-
-        Mom = array('f',[0])
-        Features.Branch("Mom",  Mom,  'Mom/F')
-
-        D0 = array('f',[0])
-        Features.Branch("D0",  D0,  'D0/F')
-
-        Z0 = array('f',[0])
-        Features.Branch("Z0", Z0,  'Z0/F')
-
-        Phi = array('f',[0])
-        Features.Branch("Phi", Phi,  'Phi/F')
-
-        Theta = array('f',[0])
-        Features.Branch("Theta", Theta,  'Theta/F')
-
-        QoP = array('f',[0])
-        Features.Branch("QoP", QoP,  'QoP/F')
 
         SumECAL = array('f',[0])
         Features.Branch("SumECAL", SumECAL,  'SumECAL/F')
@@ -94,55 +73,45 @@ class GetPart:
         isSignal = array('i',[0])
         Features.Branch("isSignal", isSignal,  'isSignal/I')
 
-        T= array('f',[0])
-        Features.Branch("T", T,  'T/F')
-
+        nHitsPerCluster = array('f',[0])
+        Features.Branch("nHitsPerCluster", nHitsPerCluster,  'nHitsPerCluster/F')
         nent = self.tin1.GetEntriesFast();
 
+        nEventsPass = 0
+        nEventsPassSide=0
         for i in range(nent):
             self.tin1.GetEntry(i);
             passesVeto[0] = self.hcalVeto.passesVeto()
-            NHits[0] = 0
-            Mom[0] = 0
-            D0[0] = 0
-            Z0[0] = 0
-            Phi[0] = 0
-            Theta[0] = 0
-            T[0] = 0
-            QoP[0] = 0
+
             SumECAL[0] = 0
             SumHCAL[0] =0
             nClusters[0] = 0
+            nHitsPerCluster[0] = 0
             isSignal[0] = 0
-            #avEClu[0] = 0
-            #avNHitsClu[0] = 0
-            hasTrack = False
-            for ih, track in enumerate(self.recoilTracking):
-                NHits[0] = track.getNhits();
-                Mom[0] = math.sqrt(track.getMomentum()[0]*track.getMomentum()[0] + track.getMomentum()[1]*track.getMomentum()[1] + track.getMomentum()[2]*track.getMomentum()[2])
-                D0[0] = track.getD0()
-                Z0[0] = track.getZ0()
-                Phi[0] = track.getPhi()
-                Theta[0] = track.getTheta()
-                QoP[0] = track.getQoP()
-                T[0] = track.getT()
-                isSignal[0] = 1
-                hasTrack = True
-
+            hasSide = False
+            nHits = []
 
             for hit in self.hcalHits:
                 sumHcal = 0
                 if (hit.isNoise()==0):
                     SumHCAL[0] += hit.getPE()
+                if(hit.getSection() !=0):
+                    hasSide = True
             for hit in self.ecalHits:
                 if (hit.isNoise() is False):
                     SumECAL[0] +=  hit.getEnergy()
 
+            for cluster in self.pfhcalClusters:
+                nHits.append(cluster.getNHits())
+                nHitsPerCluster[0] = np.mean(nHits)
             #for cluster in self.hcalClusters:
             nClusters[0] = len(self.pfhcalClusters)
-
-            if hasTrack == True:
-                Features.Fill()
+            if(passesVeto[0] == 1 and SumECAL[0] < SumHCAL[0]*3 + 3500 and nClusters[0] < 1):
+                nEventsPass+=1
+            if(hasSide == False):
+                nEventsPassSide+=1
+            Features.Fill()
+        print(nEventsPass,nEventsPassSide, nent)
         f.Write();
         f.Close();
 

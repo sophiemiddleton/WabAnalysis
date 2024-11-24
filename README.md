@@ -14,13 +14,15 @@ Within the generator directory are scripts to read the LHE files and plot genera
 - The LHEs can be read using the standard lhereader.py script
 - The wabana.py script can be used to plot important features from the LHE files
 
-### Hit and Cluster Reconstruction
+### WAB samples
 
-- The script labelled "WABGun.py" fires WAB LHEs and stores most data products including the veto output and clusters. To use:
+The config directory contains information on how to make reconstructed WAB samples. The current chain:
 
--- ldmx fire WABGun.py
+PFWAB --> MakeTracks --> EventAna (or CalAna).
 
-The output will be in the format of a .root file containing LDMX products. Further analysis is required to use these products i.e. ntupling. The .root should have information from ECal and HCal rec hits and HCal clusters. The traditional HCalVeto is also ran for comparrison.
+There are also several configs for specific studies.
+
+MakeDiscriminator is a multi-purpose debugging analyzer.
 
 ### Tracking
 
@@ -55,12 +57,9 @@ pass this into MakeTracks.py (ldmx fire MakeTracks.py) and run analysis as above
 
 ### WAB Veto analysis
 
-To fully veto WABs we need to combine information into the Veto, this includes:
+A simple cut and count is available in CalAna. The BDT directory contains the more sophisticated BDT scripts.
 
-- Energy deposited in ECAL .v. HCAL (2D cut)
-- Cluster information from Hcal
-- Track parameters
-
-The combination of this information allows for complete discrimination of WAB/WASB and WAS.
-
-Two python notebooks are included to show how the ntuples made from the previous steps can create a cut based veto.
+-- incBDT: assumes training on inclusive samples 
+-- appBDT: apply BDT
+-- WASBDT: for training on just WAS background
+-- calBDT: uses just calo features

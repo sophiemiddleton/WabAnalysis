@@ -138,7 +138,7 @@ p.sequence   = [digiRecoil,
 # The input file to be added.
 # for now, we just take the first argument on the command line
 import sys
-p.inputFiles = ["Ap1GeV_all.root"]
+p.inputFiles = ["Ap1MeV_allv2.root"]
 
 # Example about how to drop some of the collections in the output file.
 p.keep = [
@@ -148,8 +148,8 @@ p.keep = [
 # Output name
 #   just append '_withTracking' to the name of the input file
 from pathlib import Path
-p.inputFiles = ["Ap1GeV_all.root"]
-p.outputFiles = ['Ap1GeV_tracks.root']
+p.inputFiles = ["Ap1MeV_allv2.root"]
+p.outputFiles = ['Ap1MeV_tracksv2.root']
 
 # lower log level so 'info' and above messages can be printed
 p.termLogLevel=1

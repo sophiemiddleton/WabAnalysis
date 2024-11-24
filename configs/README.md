@@ -1,13 +1,5 @@
 ## Study of WAB and Signal Tracks at 8GeV ##
 
-# The LHE files are stored:
-
-/Users/sophie/LDMX/old-ldmx/ldmx-files/8GeV for WABs
-
-and
-
-/Users/sophie/LDMX/old-ldmx/LDMX-Nov2023/8GeV_signal/ for A' signals of various masses
-
 # Generator analysis
 
 - The LHEs can be read using the standard lhereader.py script
@@ -19,6 +11,10 @@ and
 
 -- ldmx fire WABGun.py
 
+For PF clustering:
+
+-- ldmx fire PFWAB.py
+
 # tracking
 
 The run the tracking (edit the script to use the right input .root):
@@ -29,13 +25,19 @@ passing the output of WABGun into here
 
 # analysis
 
-For general analysis use ...
-
 For tracking analysis:
 
 -- ldmx python3 EventAna.py --ifile1 WAB_FF2_8GEV_Track.root
 
-this produces an ntuple of event parameters
+this produces an ntuple of event parameters. A similar analyzer is built for Calo infor: CalAna.py
+
+For studies of how many hits in each detector:
+
+-- ldmx python3 HitCount.py
+
+For study of side HCAL size:
+
+-- ldmx python3 SideHCAL.py
 
 # signals at 8GeV_signal
 
@@ -49,13 +51,3 @@ this produces everything you need in terms of reconstruction
 To produce tracks:
 
 pass this into MakeTracks.py (ldmx fire MakeTracks.py) and run analysis as before
-
-
-# WAB Veto analysis
-
-To fully veto WABs we need to combine information into the Veto, this includes:
-
-- ECAL Rec hits
-- HCAL Rec hits
-- HCAL clusters (using old algorithm)
--

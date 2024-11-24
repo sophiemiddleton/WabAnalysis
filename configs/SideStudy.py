@@ -4,8 +4,7 @@ import importlib
 import ROOT
 import numpy as np
 from ROOT import TTree, TBranch, TFile
-ROOT.gSystem.Load("/Users/sophie/LDMX/software/ldmx-sw/install/lib/libFramework.so")	;
-ROOT.gSystem.Load("/Users/sophie/LDMX/software/ldmx-sw/install/lib/libEcal.so")	;
+ROOT.gSystem.Load("/Users/sophie/LDMX/software/NewClone/ldmx-sw/install/lib/libFramework.so")	;
 import os
 import math
 import sys
@@ -13,6 +12,7 @@ import sys
 import matplotlib.pyplot as plt
 from array import array
 from optparse import OptionParser
+import scipy.optimize
 sys.path.insert(0, '../')
 
 layer_weights = ([
@@ -22,6 +22,9 @@ layer_weights = ([
     18.539, 18.539, 9.938
 ])
 mip_si_energy = 0.130 #MeV - corresponds to ~3.5 eV per e-h pair <- derived from 0.5mm thick Si
+
+def func(x, a, b, c,d,e,f):
+    return a*x**5 + b*x**4 + c*x**3 + d*x**2 + e*x + f
 
 class Event():
     def __init__(self):
@@ -57,16 +60,16 @@ class WabEvent:
         self.hcalVeto = ROOT.ldmx.HcalVetoResult()
         # Store Branch Address:
         #self.tin.SetBranchAddress("EventHeader",  ROOT.AddressOf( self.evHeader1 ));
-        self.tin.SetBranchAddress("SimParticles_v14", ROOT.AddressOf( self.simParticles ));
-        self.tin.SetBranchAddress("HcalRecHits_v14", ROOT.AddressOf( self.hcalHits ));
-        self.tin.SetBranchAddress("EcalRecHits_v14", ROOT.AddressOf( self.ecalHits ));
-        #self.tin.SetBranchAddress("HcalClusters_v14",  ROOT.AddressOf( self.hcalClusters ));
-        self.tin.SetBranchAddress("HcalScoringPlaneHits_v14", ROOT.AddressOf( self.hcalSPHits ));
-        self.tin.SetBranchAddress("EcalScoringPlaneHits_v14", ROOT.AddressOf( self.ecalSPHits ));
-        self.tin.SetBranchAddress("TargetScoringPlaneHits_v14", ROOT.AddressOf( self.targetSPHits ));
-        self.tin.SetBranchAddress("RecoilSimHits_v14", ROOT.AddressOf( self.recoilSimHits ));
-        #self.tin.SetBranchAddress("EcalVeto_v14", ROOT.AddressOf( self.ecalVeto ));
-        self.tin.SetBranchAddress("HcalVeto_v14", ROOT.AddressOf( self.hcalVeto ));
+        self.tin.SetBranchAddress("SimParticles_PF", ROOT.AddressOf( self.simParticles ));
+        self.tin.SetBranchAddress("HcalRecHits_PF", ROOT.AddressOf( self.hcalHits ));
+        self.tin.SetBranchAddress("EcalRecHits_PF", ROOT.AddressOf( self.ecalHits ));
+        #self.tin.SetBranchAddress("HcalClusters_PF",  ROOT.AddressOf( self.hcalClusters ));
+        self.tin.SetBranchAddress("HcalScoringPlaneHits_PF", ROOT.AddressOf( self.hcalSPHits ));
+        self.tin.SetBranchAddress("EcalScoringPlaneHits_PF", ROOT.AddressOf( self.ecalSPHits ));
+        self.tin.SetBranchAddress("TargetScoringPlaneHits_PF", ROOT.AddressOf( self.targetSPHits ));
+        self.tin.SetBranchAddress("RecoilSimHits_PF", ROOT.AddressOf( self.recoilSimHits ));
+        #self.tin.SetBranchAddress("EcalVeto_PF", ROOT.AddressOf( self.ecalVeto ));
+        self.tin.SetBranchAddress("HcalVeto_PF", ROOT.AddressOf( self.hcalVeto ));
 
 
 
@@ -88,33 +91,47 @@ class WabEvent:
     def loop(self, event_type):
         fracs = []
         sizes = []
+        errors = []
         nentries = self.tin.GetEntriesFast();
         j = 400
         while( j < 1500):
             nSideHCAL = 0.
             nNewSize=0.
             nNotSideHCAL = 0.
-            for i in range(nentries):
+            for i in range(1000):#nentries):
                 self.tin.GetEntry(i);
 
 
                 for hit in self.hcalHits:
-                    if(abs(hit.getZPos()) < 870 and abs(hit.getXPos()) > 400 and abs(hit.getYPos()) > 400 ):
+                    if(abs(hit.getSection())!=0 ):
                         if(abs(hit.getXPos()) < j and abs(hit.getYPos()) < j):
                             nNewSize += 1
 
-                    if(abs(hit.getZPos()) < 870 and abs(hit.getXPos()) > 400 and abs(hit.getYPos()) > 400):
+                    if(abs(hit.getSection())!=0):
                         nSideHCAL += 1;
                     else:
                         nNotSideHCAL += 1;
             j+= 10
             fracs.append(100*(nSideHCAL - nNewSize)/(nSideHCAL+nNotSideHCAL))
+            err_num = np.sqrt(nSideHCAL + nNewSize)
+            err_den =  np.sqrt(nSideHCAL+nNotSideHCAL)
+            err_tot = np.sqrt((100*(nSideHCAL - nNewSize)/(nSideHCAL+nNotSideHCAL))*((err_num*err_num)/((nSideHCAL + nNewSize)*(nSideHCAL + nNewSize)) + (err_den*err_den)/((nSideHCAL+nNotSideHCAL)*(nSideHCAL+nNotSideHCAL))))
+            print(err_tot)
+            errors.append(err_tot)
             sizes.append(j)
 
             print(j, 100*(nSideHCAL - nNewSize)/(nSideHCAL+nNotSideHCAL), "%")
-        plt.plot(sizes,fracs)
+        #plt.plot(sizes,fracs,markers=".")
+        x = np.array(sizes, dtype=float) #transform your data in a numpy array of floats
+        y = np.array(fracs, dtype=float) #so the curve_fit can work
+
+        plt.errorbar(sizes,fracs, yerr=errors,fmt='o')
+        popt, pcov = scipy.optimize.curve_fit(func, x, y)
+        print(popt)
         plt.xlabel('xy size [mm]')
-        plt.ylabel('hits lost [%]')
+        plt.plot(x, func(x, *popt), 'r-', label="Fitted Curve")
+        plt.ylabel("hits lost [%]")
+        #plt.yscale('log')
         plt.savefig("WASFF3_side.pdf")
 
 def main(options,args) :

@@ -1,48 +1,39 @@
 from LDMX.Framework import ldmxcfg
-p = ldmxcfg.Process('signal')
-p.maxTriesPerEvent = 10000
-p.maxEvents = 10000
-
+p = ldmxcfg.Process( "PF" )
 import sys
-lheLib = sys.argv[1]
-detector = 'ldmx-det-v14-8gev'
+p.maxEvents = 100000
+if len(sys.argv) > 1 :
+    p.maxEvents = int(sys.argv[1])
 
-import os
-def is_within_directory(directory, target):
-    abs_directory = os.path.abspath(directory)
-    abs_target = os.path.abspath(target)
-    prefix = os.path.commonprefix([abs_directory, abs_target])
-    return prefix == abs_directory
+# we want to see every event
+p.logFrequency = 1 if p.maxEvents <= 10 else 100
+p.termLogLevel = 1
 
+# Set a run number
+p.run = 9001
 
-def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
-    for member in tar.getmembers():
-        member_path = os.path.join(path, member.name)
-        if not is_within_directory(path, member_path):
-            raise Exception("Attempted Path Traversal in Tar File")
-    tar.extractall(path, members, numeric_owner=numeric_owner)
+# we also only have an output file
+p.outputFiles = [ "WASBFF2_all_100K.root" ]
 
+from LDMX.SimCore import simulator as sim
 
-import tarfile
-with tarfile.open(lheLib,"r:gz") as ar :
-    safe_extract(ar)
+import LDMX.Ecal.EcalGeometry
+import LDMX.Hcal.HcalGeometry
+#mySim = sim.simulator( "mySim" )
+mySim = sim.simulator("signal")
+mySim.setDetector( 'ldmx-det-v14-8gev' , True )
+sim.beamSpotSmear = [20., 80., 0.]
 
+# Get a pre-written generator
+from LDMX.SimCore import generators as gen
 
-lib_parameters = os.path.basename(lheLib).replace('.tar.gz','').split('_')
-ap_mass = float(lib_parameters[lib_parameters.index('mA')+1])*1000.
-p.run = int(lib_parameters[lib_parameters.index('run')+1])
-timestamp = lib_parameters[lib_parameters.index('run')+2]
-unpacked_lib = os.path.basename(lheLib).replace(f'_{timestamp}.tar.gz','')
+#from particleSources import cocktail_commands
+mySim.generators.append(gen.lhe( "Signal Generator", ("/Users/sophie/LDMX/software/NewClone/UCSB/ucsb-lhe/8GeV_WASBFF4_100K.lhe" )))
 
-from LDMX.Biasing import target
-mySim = target.dark_brem(ap_mass, unpacked_lib, detector)
+# add your configured simulation to the sequence
+p.sequence.append( mySim )
 
-p.sequence = [ mySim ]
-
-import os
-import sys
-
-p.outputFiles = ['simoutput.root']
+# reco stuff
 
 import LDMX.Ecal.EcalGeometry
 import LDMX.Ecal.ecal_hardcoded_conditions
@@ -51,13 +42,10 @@ import LDMX.Hcal.hcal_hardcoded_conditions
 import LDMX.Ecal.digi as ecal_digi
 import LDMX.Ecal.vetos as ecal_vetos
 import LDMX.Hcal.digi as hcal_digi
-from LDMX.Hcal import hcal as hcal
-from LDMX.DetDescr.HcalGeometry import HcalGeometry
-from LDMX.Hcal import HcalGeometry
+from LDMX.Hcal import hcal
 from LDMX.TrigScint.trigScint import TrigScintDigiProducer
 from LDMX.TrigScint.trigScint import TrigScintClusterProducer
 from LDMX.TrigScint.trigScint import trigScintTrack
-
 ts_digis = [
         TrigScintDigiProducer.pad1(),
         TrigScintDigiProducer.pad2(),
@@ -66,29 +54,26 @@ ts_digis = [
 for d in ts_digis :
     d.randomSeed = 1
 
+from LDMX.DQM import dqm
+
 from LDMX.Recon.electronCounter import ElectronCounter
 from LDMX.Recon.simpleTrigger import TriggerProcessor
 
 count = ElectronCounter(1,'ElectronCounter')
 count.input_pass_name = ''
-from LDMX.DQM import dqm
 
-geom = HcalGeometry.HcalGeometryProvider.getInstance()
-
+from LDMX.Hcal import hcal_trig_digi
+from LDMX.Ecal import ecal_trig_digi
+hcalClusters = hcal.HcalClusterProducer()
+#hcalNewClusters = hcal.HcalNewClusterProducer()
 p.sequence.extend([
-        ecal_digi.EcalDigiProducer(si_thickness = 0.5),
+        ecal_digi.EcalDigiProducer(),
         ecal_digi.EcalRecProducer(),
-        ecal_vetos.EcalVetoProcessor(),
         hcal_digi.HcalDigiProducer(),
         hcal_digi.HcalRecProducer(),
-        hcal.HcalClusterProducer(),
+        hcalClusters,
+        #hcalNewClusters,
         hcal.HcalVetoProcessor('hcalVeto'),
-        *ts_digis,
-        TrigScintClusterProducer.pad1(),
-        TrigScintClusterProducer.pad2(),
-        TrigScintClusterProducer.pad3(),
-        trigScintTrack,
-        count, TriggerProcessor('trigger',8000.),
         ])
 
 if True: #False:
@@ -107,7 +92,7 @@ if True: #False:
     hcalPF.doSingleCluster = False
     hcalPF.clusterHitDist = 200. # mm
     hcalPF.logEnergyWeight = True
-    hcalPF.minHitEnergy = 0.1
+    hcalPF.minHitEnergy = 0.5
     hcalPF.minClusterHitMult = 5
 
     ecalPF_simple = pfReco.pfEcalClusterProducer()
